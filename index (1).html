@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lector y Auto-Respondedor de Gmail</title>
+  <style>
+    :root {
+      --bg-color: #121824;
+      --card-bg: #1e293b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --input-bg: #0f172a;
+      --alert-bg: rgba(37, 99, 235, 0.1);
+      --alert-border: rgba(37, 99, 235, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      padding: 30px 15px;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    /* Header y Créditos */
+    .header {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+      color: var(--text-main);
+    }
+
+    .team-badge {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .member {
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+    }
+
+    /* Mensaje para el Profesor */
+    .professor-notice {
+      background-color: var(--alert-bg);
+      border: 1px solid var(--alert-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 0.95rem;
+      color: #93c5fd;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .professor-notice strong {
+      color: #ffffff;
+    }
+
+    /* Panel de Estado y Botones */
+    .control-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 25px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 15px;
+      background-color: rgba(148, 163, 184, 0.1);
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+    }
+
+    .status-badge.connected {
+      background-color: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.95rem;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-danger {
+      background-color: transparent;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background-color: var(--danger);
+      color: white;
+    }
+
+    .btn-secondary {
+      background-color: #334155;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background-color: #475569;
+    }
+
+    /* Tarjetas de Correo */
+    .email-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    .email-header {
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+
+    .email-field {
+      margin-bottom: 4px;
+      font-size: 0.95rem;
+    }
+
+    .email-field strong {
+      color: var(--text-muted);
+    }
+
+    .email-snippet {
+      background: var(--input-bg);
+      padding: 12px;
+      border-radius: 8px;
+      margin: 12px 0;
+      font-size: 0.9rem;
+      border-left: 3px solid var(--primary);
+      color: #cbd5e1;
+    }
+
+    textarea {
+      width: 100%;
+      height: 90px;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 12px;
+      margin-top: 8px;
+      margin-bottom: 12px;
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- Encabezado del Proyecto -->
+    <div class="header">
+      <h1>Lector y Auto-Respondedor de Gmail</h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Desarrollado por:</p>
+      <div class="team-badge">
+        <span class="member">👨‍💻 Andrés Sánchez</span>
+        <span class="member">👨‍💻 Andrés Toro</span>
+        <span class="member">👨‍💻 Yesid Pérez</span>
+      </div>
+    </div>
+
+    <!-- Panel de Control -->
+    <div class="control-panel">
+      <!-- Indicación para el Docente -->
+      <div class="professor-notice">
+        📌 <strong>Nota para la revisión:</strong> Por favor iniciar sesión únicamente con el correo institucional autorizado: <strong>fgonzalez920@uan.edu.co</strong>
+      </div>
+
+      <div id="status" class="status-badge">Estado: Cargando librerías...</div>
+      
+      <div class="button-group">
+        <button id="authorize_button" class="btn btn-primary" onclick="handleAuthClick()">Iniciar Sesión con Google</button>
+        <button id="check_emails_button" class="btn btn-secondary" onclick="listUnreadMessages()" style="display: none;">Buscar Correos No Leídos</button>
+        <button id="signout_button" class="btn btn-danger" onclick="handleSignoutClick()" style="display: none;">Cerrar Sesión</button>
+      </div>
+    </div>
+
+    <!-- Contenedor de Correos -->
+    <div id="emails_container"></div>
+
+    <div class="footer">
+      <p>&copy; Proyecto Académico - Andrés Sánchez | Andrés Toro | Yesid Pérez</p>
+    </div>
+
+  </div>
+
+  <!-- Carga de librerías oficiales de Google -->
+  <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+  <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
+  <script>
+    // -------------------------------------------------------------
+    // CREDENCIALES CONFIGURADAS
+    // -------------------------------------------------------------
+    const CLIENT_ID = '857293143809-cdmir9qld4q2hvi60c05uhjeurklbbt8.apps.googleusercontent.com';
+    const API_KEY = 'AIzaSyBYUHOKZyQJGigHIRzoNjVjIZV1DxetV3M';
+    const SCOPES = 'https://www.googleapis.com/auth/gmail.modify';
+
+    let tokenClient;
+    let gapiInited = false;
+    let gisInited = false;
+
+    function gapiLoaded() {
+      gapi.load('client', initializeGapiClient);
+    }
+
+    async function initializeGapiClient() {
+      await gapi.client.init({
+        apiKey: API_KEY,
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest'],
+      });
+      gapiInited = true;
+      maybeEnableButtons();
+    }
+
+    function gisLoaded() {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: '', 
+      });
+      gisInited = true;
+      maybeEnableButtons();
+    }
+
+    function maybeEnableButtons() {
+      if (gapiInited && gisInited) {
+        const statusEl = document.getElementById('status');
+        statusEl.innerText = 'Estado: Listo para conectar';
+      }
+    }
+
+    function handleAuthClick() {
+      tokenClient.callback = async (resp) => {
+        if (resp.error !== undefined) {
+          throw (resp);
+        }
+        document.getElementById('signout_button').style.display = 'inline-block';
+        document.getElementById('check_emails_button').style.display = 'inline-block';
+        document.getElementById('authorize_button').style.display = 'none';
+        
+        const statusEl = document.getElementById('status');
+        statusEl.innerText = 'Estado: Conectado a Gmail';
+        statusEl.classList.add('connected');
+
+        listUnreadMessages();
+      };
+
+      if (gapi.client.getToken() === null) {
+        tokenClient.requestAccessToken({prompt: 'consent'});
+      } else {
+        tokenClient.requestAccessToken({prompt: ''});
+      }
+    }
+
+    function handleSignoutClick() {
+      const token = gapi.client.getToken();
+      if (token !== null) {
+        google.accounts.oauth2.revoke(token.access_token);
+        gapi.client.setToken('');
+        document.getElementById('emails_container').innerHTML = '';
+        document.getElementById('authorize_button').style.display = 'inline-block';
+        document.getElementById('signout_button').style.display = 'none';
+        document.getElementById('check_emails_button').style.display = 'none';
+        
+        const statusEl = document.getElementById('status');
+        statusEl.innerText = 'Estado: Sesión cerrada';
+        statusEl.classList.remove('connected');
+      }
+    }
+
+    async function listUnreadMessages() {
+      const container = document.getElementById('emails_container');
+      container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Buscando correos no leídos...</p>';
+      
+      try {
+        const response = await gapi.client.gmail.users.messages.list({
+          'userId': 'me',
+          'q': 'is:unread'
+        });
+        
+        const messages = response.result.messages;
+        container.innerHTML = '';
+
+        if (!messages || messages.length === 0) {
+          container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">No tienes correos no leídos.</p>';
+          return;
+        }
+
+        for (const message of messages) {
+          await getMessageDetails(message.id);
+        }
+      } catch (err) {
+        container.innerHTML = '<p style="text-align: center; color: var(--danger);">Error al obtener correos: ' + err.message + '</p>';
+      }
+    }
+
+    async function getMessageDetails(messageId) {
+      const res = await gapi.client.gmail.users.messages.get({
+        'userId': 'me',
+        'id': messageId
+      });
+
+      const message = res.result;
+      const headers = message.payload.headers;
+      
+      const subject = headers.find(h => h.name === 'Subject')?.value || 'Sin Asunto';
+      const from = headers.find(h => h.name === 'From')?.value || 'Desconocido';
+      const snippet = message.snippet;
+      const threadId = message.threadId;
+
+      const autoReplyText = generarRespuestaAutomatica(snippet);
+
+      renderEmailCard(messageId, threadId, from, subject, snippet, autoReplyText);
+    }
+
+    function generarRespuestaAutomatica(contenido) {
+      const texto = contenido.toLowerCase();
+      if (texto.includes('precio') || texto.includes('cotizacion')) {
+        return 'Hola, gracias por tu interés. En breve te enviaremos la información de precios.';
+      } else if (texto.includes('soporte') || texto.includes('ayuda')) {
+        return 'Hola, hemos recibido tu mensaje de soporte y lo revisaremos pronto.';
+      }
+      return 'Hola, he recibido tu correo correctamente. ¡Muchas gracias!';
+    }
+
+    function renderEmailCard(id, threadId, from, subject, snippet, defaultResponse) {
+      const container = document.getElementById('emails_container');
+      const card = document.createElement('div');
+      card.className = 'email-card';
+      card.id = `card-${id}`;
+
+      card.innerHTML = `
+        <div class="email-header">
+          <div class="email-field"><strong>De:</strong> ${escapeHtml(from)}</div>
+          <div class="email-field"><strong>Asunto:</strong> ${escapeHtml(subject)}</div>
+        </div>
+        <div class="email-snippet">${escapeHtml(snippet)}</div>
+        <label for="reply-${id}">Respuesta sugerida:</label>
+        <textarea id="reply-${id}">${escapeHtml(defaultResponse)}</textarea>
+        <button class="btn btn-primary" onclick="sendReply('${id}', '${threadId}', '${escapeHtml(from)}')">Enviar Respuesta</button>
+      `;
+
+      container.appendChild(card);
+    }
+
+    async function sendReply(messageId, threadId, to) {
+      const replyText = document.getElementById(`reply-${messageId}`).value;
+
+      const emailLines = [
+        `To: ${to}`,
+        `Subject: Re: Respuesta automática`,
+        `In-Reply-To: ${messageId}`,
+        `References: ${messageId}`,
+        'Content-Type: text/plain; charset=utf-8',
+        'MIME-Version: 1.0',
+        '',
+        replyText
+      ];
+
+      const email = emailLines.join('\r\n');
+      const base64EncodedEmail = btoa(unescape(encodeURIComponent(email)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+      try {
+        await gapi.client.gmail.users.messages.send({
+          'userId': 'me',
+          'resource': {
+            'raw': base64EncodedEmail,
+            'threadId': threadId
+          }
+        });
+
+        await gapi.client.gmail.users.messages.modify({
+          'userId': 'me',
+          'id': messageId,
+          'resource': {
+            'removeLabelIds': ['UNREAD']
+          }
+        });
+
+        alert('Respuesta enviada con éxito');
+        document.getElementById(`card-${messageId}`).remove();
+      } catch (err) {
+        alert('Error al enviar la respuesta: ' + err.message);
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
